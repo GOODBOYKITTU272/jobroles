@@ -1,11 +1,11 @@
-﻿'use client'
+'use client'
 import { useState } from 'react'
 import { Sidebar } from '@/components/dashboard/Sidebar'
 import { MetricCard } from '@/components/dashboard/MetricCard'
 import { RoleTile, type RoleData } from '@/components/dashboard/RoleTile'
 import { RoleDetailsPanel } from '@/components/dashboard/RoleDetailsPanel'
 
-export const ROLES: RoleData[] = [
+const ROLES: RoleData[] = [
   { title: 'KYC Analyst',             score: 9.9, jobs: '18,500', salaryMin: '$85K', salaryMax: '$120K', growth: '18%', aiExposure: 2.1, colSpan: 2, rowSpan: 2 },
   { title: 'Fraud Analyst',           score: 9.5, jobs: '16,200', salaryMin: '$80K', salaryMax: '$115K', growth: '16%', aiExposure: 2.8, colSpan: 1, rowSpan: 1 },
   { title: 'Risk Analyst',            score: 8.9, jobs: '14,800', salaryMin: '$85K', salaryMax: '$125K', growth: '18%', aiExposure: 3.2, colSpan: 1, rowSpan: 1 },

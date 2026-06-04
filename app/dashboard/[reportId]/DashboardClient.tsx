@@ -1,5 +1,5 @@
 ﻿'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Sidebar } from '@/components/dashboard/Sidebar'
 import { MetricCard } from '@/components/dashboard/MetricCard'
 import { RoleTile, type RoleData } from '@/components/dashboard/RoleTile'
@@ -40,6 +40,12 @@ export default function DashboardClient({
   const insightCache = useState(() => new Map<string,string>())[0]
 
   const leg = LEGEND[colorMode]
+
+  // Auto-fetch insight whenever selected role or filter changes
+  useEffect(() => {
+    if (selected) fetchInsight(selected, colorMode)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected?.title, colorMode])
 
   async function fetchInsight(role: RoleData, mode: Filter) {
     const key = role.title + '::' + mode
