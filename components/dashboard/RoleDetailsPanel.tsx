@@ -1,8 +1,16 @@
-﻿'use client'
-import { useState } from 'react'
+'use client'
+import { useState, useEffect } from 'react'
 import type { RoleData } from './RoleTile'
 
-interface Props { role: RoleData; onClose: () => void }
+interface Props { 
+  role: RoleData; 
+  education?: string; 
+  onClose: () => void;
+  insight?: string;
+  insightLoading?: boolean;
+  insightMetric?: string;
+  onMetricSelect?: (metric: 'Job Volume' | 'Salary' | 'Growth Outlook' | 'AI Exposure' | 'Match Score') => void;
+}
 
 const COMPANIES: Record<string, string[]> = {
   default: ['JPMorgan Chase','Citi','Wells Fargo','Bank of America','HSBC','American Express','Goldman Sachs','Morgan Stanley'],
@@ -14,7 +22,7 @@ const SKILLS: Record<string, string[]> = {
   default: ['AML Compliance','Risk Assessment','Regulatory Reporting','Data Analysis','Investigation','Financial Crime','Transaction Monitoring'],
 }
 
-const TABS = ['Overview','Market Data','Companies','Job Openings','Skills'] as const
+const TABS = ['Overview','Market Data','Skills'] as const
 type Tab = typeof TABS[number]
 
 function scoreColor(s: number) {
@@ -28,10 +36,67 @@ function aiColor(ai: number) {
   return ai <= 3 ? 'text-emerald-400' : ai <= 5 ? 'text-yellow-400' : 'text-red-400'
 }
 
-export function RoleDetailsPanel({ role, onClose }: Props) {
+interface RoleDetailsData {
+  description: string
+  responsibilities: string[]
+  skills: string[]
+  companies: string[]
+}
+
+const defaultDetails: RoleDetailsData = {
+  description: "Professionals in this field design, build, and optimize systems to drive organizational value, ensure operational excellence, and align technical executions with business needs.",
+  responsibilities: [
+    'Deploy, monitor, and maintain core business systems',
+    'Analyze patterns and troubleshoot operational bottlenecks',
+    'Maintain industry standard security practices and regulatory reports',
+    'Collaborate across cross-functional teams to align project deliverables'
+  ],
+  skills: ['Problem Solving', 'Data Analysis', 'Critical Thinking', 'System Design', 'Communication', 'Collaborative Tools', 'Project Management'],
+  companies: ['JPMorgan Chase', 'Citi', 'Wells Fargo', 'Bank of America', 'HSBC', 'American Express']
+}
+
+const detailsCache = new Map<string, RoleDetailsData>()
+
+export function RoleDetailsPanel({ role, education, onClose, insight, insightLoading, insightMetric, onMetricSelect }: Props) {
   const [tab, setTab] = useState<Tab>('Overview')
-  const companies = COMPANIES[role.title] ?? COMPANIES.default
-  const skills = SKILLS[role.title] ?? SKILLS.default
+  const [details, setDetails] = useState<RoleDetailsData>(defaultDetails)
+  const [loading, setLoading] = useState(false)
+
+  // Dynamic fetch effect when role title changes
+  useEffect(() => {
+    let active = true
+    async function fetchDetails() {
+      const cacheKey = role.title
+      if (detailsCache.has(cacheKey)) {
+        setDetails(detailsCache.get(cacheKey)!)
+        return
+      }
+      setLoading(true)
+      try {
+        const res = await fetch('/api/role-details', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role: role.title })
+        })
+        if (!res.ok) throw new Error()
+        const data = await res.json() as RoleDetailsData
+        if (data.description && active) {
+          detailsCache.set(cacheKey, data)
+          setDetails(data)
+        }
+      } catch {
+        // Fallback gracefully on network error
+        if (active) setDetails(defaultDetails)
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+    fetchDetails()
+    return () => { active = false }
+  }, [role.title])
+
+  const companies = details.companies
+  const skills = details.skills
 
   return (
     <aside className="w-80 shrink-0 bg-[#13151f] border-l border-white/10 flex flex-col h-screen sticky top-0 overflow-y-auto">
@@ -79,22 +144,43 @@ export function RoleDetailsPanel({ role, onClose }: Props) {
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">About This Role</p>
             <p className="text-xs text-gray-300 leading-relaxed">
-              {role.title} professionals verify customer identities, assess financial risk, investigate
-              suspicious activity, and ensure compliance with AML/KYC regulations and internal policies.
+              {loading ? (
+                <span className="flex items-center gap-2 text-gray-500 py-1">
+                  <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  Loading role overview...
+                </span>
+              ) : (
+                details.description
+              )}
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             {[
-              { label: 'Jobs in USA',    value: role.jobs,                         hi: '' },
-              { label: 'Salary Range',   value: `${role.salaryMin}–${role.salaryMax}`, hi: 'text-emerald-400' },
-              { label: 'Job Growth',     value: `+${role.growth}`,                hi: 'text-emerald-400' },
-              { label: 'AI Exposure',    value: `${role.aiExposure}/10`,           hi: aiColor(role.aiExposure) },
-              { label: 'Education',      value: "Bachelor's",                      hi: '' },
-              { label: 'Demand Level',   value: role.score >= 9 ? 'High' : 'Medium', hi: role.score >= 9 ? 'text-emerald-400' : 'text-yellow-400' },
+              { label: 'Jobs in USA',    value: role.jobs,                         metric: 'Job Volume' as const,     hi: '' },
+              { label: 'Salary Range',   value: `${role.salaryMin}–${role.salaryMax}`, metric: 'Salary' as const,         hi: 'text-emerald-400' },
+              { label: 'Job Growth',     value: `+${role.growth}`,                metric: 'Growth Outlook' as const, hi: 'text-emerald-400' },
+              { label: 'AI Exposure',    value: `${role.aiExposure}/10`,           metric: 'AI Exposure' as const,    hi: aiColor(role.aiExposure) },
+              { label: 'Education',      value: education || "Bachelor's",         metric: null,                      hi: 'truncate max-w-[130px] inline-block' },
+              { label: 'Demand Level',   value: role.score >= 9 ? 'High' : 'Medium', metric: 'Match Score' as const,    hi: role.score >= 9 ? 'text-emerald-400' : 'text-yellow-400' },
             ].map(s => (
-              <div key={s.label} className="bg-white/5 rounded-lg p-2.5 hover:bg-white/8 transition-colors">
-                <p className="text-xs text-gray-500">{s.label}</p>
+              <div 
+                key={s.label} 
+                onClick={() => s.metric && onMetricSelect?.(s.metric)}
+                className={`bg-white/5 rounded-lg p-2.5 transition-all group/metric ${
+                  s.metric 
+                    ? 'cursor-pointer hover:bg-white/10 hover:border-blue-500/40 border border-transparent active:scale-[0.98]' 
+                    : 'border border-transparent'
+                }`}
+              >
+                <p className="text-[10px] text-gray-500 flex items-center justify-between font-medium">
+                  <span>{s.label}</span>
+                  {s.metric && (
+                    <span className="text-[10px] text-blue-400 opacity-0 group-hover/metric:opacity-100 transition-opacity">
+                      🖱️
+                    </span>
+                  )}
+                </p>
                 <p className={`text-xs font-bold mt-0.5 ${s.hi || 'text-white'}`}>{s.value}</p>
               </div>
             ))}
@@ -117,13 +203,38 @@ export function RoleDetailsPanel({ role, onClose }: Props) {
 
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">Key Responsibilities</p>
-            <ul className="space-y-1.5">
-              {['Conduct customer due diligence and identity verification','Monitor transactions and identify suspicious activity','Maintain AML compliance and regulatory reporting','Investigate alerts and escalate potential risks'].map((r,i) => (
-                <li key={i} className="flex items-start gap-2 text-xs text-gray-300">
-                  <span className="text-emerald-400 shrink-0 mt-0.5">●</span>{r}
-                </li>
-              ))}
-            </ul>
+            {loading ? (
+              <span className="flex items-center gap-2 text-gray-500 py-1 text-xs">
+                <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                Loading responsibilities...
+              </span>
+            ) : (
+              <ul className="space-y-1.5">
+                {details.responsibilities.map((r, i) => (
+                  <li key={i} className="flex items-start gap-2 text-xs text-gray-300">
+                    <span className="text-emerald-400 shrink-0 mt-0.5">●</span>{r}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* AI Insight Card */}
+          <div className="bg-gradient-to-r from-blue-950/40 to-indigo-950/40 border border-blue-500/20 rounded-xl p-4 space-y-2">
+            <div className="flex items-center gap-1.5 text-xs text-blue-400 font-semibold tracking-wide uppercase">
+              <span className="text-sm">✦</span>
+              <span>AI Insight · {role.title} · {insightMetric}</span>
+            </div>
+            <p className="text-xs text-gray-300 leading-relaxed min-h-[36px]">
+              {insightLoading ? (
+                <span className="flex items-center gap-2 text-gray-500 py-1">
+                  <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-blue-400 rounded-full animate-spin" />
+                  Analyzing US market trends...
+                </span>
+              ) : (
+                insight ? `"${insight}"` : "No insight available for the selected metric."
+              )}
+            </p>
           </div>
 
           <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/10 border border-blue-500/20 rounded-xl p-4 text-center">
@@ -166,13 +277,6 @@ export function RoleDetailsPanel({ role, onClose }: Props) {
               <span key={s} className="text-xs bg-blue-600/20 border border-blue-500/30 text-blue-300 px-2.5 py-1 rounded-full">{s}</span>
             ))}
           </div>
-        </div>
-      )}
-
-      {(tab === 'Companies' || tab === 'Job Openings') && (
-        <div className="p-4 text-center text-gray-500 text-sm mt-12 space-y-2">
-          <p className="text-2xl">🔜</p>
-          <p>Coming soon</p>
         </div>
       )}
     </aside>

@@ -1,4 +1,4 @@
-﻿import OpenAI from 'openai'
+import OpenAI from 'openai'
 import { smartTruncate } from './extract'
 
 if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not set')
@@ -22,6 +22,8 @@ export interface ParsedResume {
     match_percent: number
     demand_level: 'Very High' | 'High' | 'Medium' | 'Low'
     ease_of_transition: 'Easy' | 'Moderate' | 'Difficult'
+    why_it_matches: string
+    interview_potential: 'Very High' | 'High' | 'Medium' | 'Low'
   }>
   application_strategy: Array<{ role: string; percent: number }>
   missing_keywords: string[]
@@ -46,7 +48,15 @@ Analyze the resume and return ONLY valid JSON matching this exact structure. Ret
   "ats_score": number 0-100,
   "primary_role": "single best role title",
   "role_matches": [
-    {"role_name": "title", "match_score": 0.0-10.0, "match_percent": 0-100, "demand_level": "Very High|High|Medium|Low", "ease_of_transition": "Easy|Moderate|Difficult"}
+    {
+      "role_name": "title",
+      "match_score": 0.0-10.0,
+      "match_percent": 0-100,
+      "demand_level": "Very High|High|Medium|Low",
+      "ease_of_transition": "Easy|Moderate|Difficult",
+      "why_it_matches": "1-sentence explanation of why they fit based on resume",
+      "interview_potential": "Very High|High|Medium|Low"
+    }
   ],
   "application_strategy": [{"role": "title", "percent": number}],
   "missing_keywords": ["keyword"],
@@ -54,13 +64,20 @@ Analyze the resume and return ONLY valid JSON matching this exact structure. Ret
   "upskilling": [{"skill": "name", "current_score": 0-100, "after_score": 0-100}]
 }
 
-RULES FOR role_matches — THIS IS THE MOST IMPORTANT FIELD:
-- Include EXACTLY 15-20 roles. Never fewer than 15.
-- Think like a US recruiter. Include current role + adjacent roles + stretch roles.
-- For ETL/QA engineers: include QA Engineer, SDET, Data Engineer, Automation Engineer, BI Developer, Data Analyst, Database Engineer, DataOps Engineer, Analytics Engineer, Release Engineer, DevOps Engineer, Software Engineer, Platform Engineer, Data Quality Engineer, Test Lead, etc.
-- For AML/KYC: include KYC Analyst, Fraud Analyst, Risk Analyst, Compliance Analyst, BSA Analyst, OFAC Analyst, SAR Analyst, Financial Crime Analyst, Sanctions Analyst, etc.
-- For Flutter/Mobile: include iOS Developer, Android Developer, React Native Developer, Mobile Engineer, etc.
-- Score same-domain roles 7.0-10.0, adjacent roles 4.0-6.9, stretch roles 2.0-3.9`
+ROLE EXPANSION ENGINE (CRITICAL)
+Your objective is to identify enough relevant job roles so the candidate can sustain 25 high-quality applications per day for several months.
+Do not restrict recommendations to the candidate's current title.
+
+Generate exactly 20-30 roles (Never fewer than 20).
+
+Score them according to this MATCH SCORE COLOR SYSTEM:
+- 🟢 DARK GREEN (9.0–10.0 Match / 90–100%): Apply Aggressively. Primary Target Roles.
+- 🟩 GREEN (8.0–8.9 Match / 80–89%): Strong Target Roles. Apply Daily.
+- 🟨 YELLOW (7.0–7.9 Match / 70–79%): Good Transferable Roles. Apply Regularly.
+- 🟧 ORANGE (6.0–6.9 Match / 60–69%): Stretch Roles. Apply Selectively.
+- 🟥 RED (Below 6.0): Do Not Prioritize.
+
+Example output for a KYC Analyst resume profile: KYC Analyst (9.8), AML Analyst (9.7), Financial Crime Analyst (9.4), Fraud Analyst (9.1), Compliance Analyst (8.8), Risk Analyst (8.6), etc. Ensure adjacent/stretch roles map accurately to Orange and Yellow tiers rather than dumping all into Red.`
 
 async function generateRoleMatchesFallback(currentRole: string, skills: string[]): Promise<ParsedResume['role_matches']> {
   const res = await openai.chat.completions.create({

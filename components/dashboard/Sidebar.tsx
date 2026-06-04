@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import type { RoleData } from './RoleTile'
 
 interface Props {
@@ -7,6 +7,7 @@ interface Props {
   onSelect: (r: RoleData) => void
   parsedRole?: string
   topScore?: number
+  onViewSummary?: () => void
 }
 
 function scoreColor(s: number) {
@@ -20,7 +21,7 @@ function initials(role: string): string {
   return role.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('') || 'AI'
 }
 
-export function Sidebar({ roles, selected, onSelect, parsedRole = '', topScore = 0 }: Props) {
+export function Sidebar({ roles, selected, onSelect, parsedRole = '', topScore = 0, onViewSummary }: Props) {
   const displayRole = parsedRole || 'Your Profile'
   const ini = initials(parsedRole)
 
@@ -46,7 +47,10 @@ export function Sidebar({ roles, selected, onSelect, parsedRole = '', topScore =
           {topScore > 0 ? topScore.toFixed(1) : '–'}
           <span className="text-sm text-gray-500">/10</span>
         </p>
-        <button className="mt-2 w-full text-xs bg-white/10 hover:bg-white/20 text-white rounded px-2 py-1.5 flex items-center justify-between transition-colors">
+        <button 
+          onClick={onViewSummary}
+          className="mt-2 w-full text-xs bg-white/10 hover:bg-white/20 text-white rounded px-2 py-1.5 flex items-center justify-between transition-colors"
+        >
           View Profile Summary <span>›</span>
         </button>
       </div>

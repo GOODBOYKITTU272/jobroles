@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { serviceSupabase } from '@/lib/supabase/service'
 import { extractText } from '@/lib/pipeline/extract'
 import { parseResumeWithGPT } from '@/lib/pipeline/parse'
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       const rows = matchedRoles.map((r, i) => ({
         report_id:   report.id,
         role_title:  r.occupation_title,
-        match_score: r.match_score,
+        match_score: Math.round(r.match_score),
         reason: JSON.stringify({
           salary_min:        r.salary_min,
           salary_max:        r.salary_max,
@@ -77,6 +77,9 @@ export async function POST(request: NextRequest) {
           ai_exposure_score: r.ai_exposure_score,
           related_roles:     r.related_roles,
           employment_count:  r.employment_count,
+          why_it_matches:    (r as any).why_it_matches || '',
+          interview_potential: (r as any).interview_potential || 'Medium',
+          original_score:    r.match_score,
         }),
         rank: i + 1,
       }))

@@ -1,8 +1,12 @@
-﻿import { serviceSupabase } from '../supabase/service'
+import { serviceSupabase } from '../supabase/service'
 import { salaryRange, getRelatedRoles, type RoleMatch } from './score'
 import type { ParsedResume } from './parse'
 
-export interface MatchedRole extends RoleMatch { related_roles: string[] }
+export interface MatchedRole extends RoleMatch { 
+  related_roles: string[]
+  why_it_matches?: string
+  interview_potential?: string
+}
 
 export async function findTopMatchedRoles(parsed: ParsedResume): Promise<MatchedRole[]> {
   // GPT already scored all roles — use that directly
@@ -61,12 +65,14 @@ export async function findTopMatchedRoles(parsed: ParsedResume): Promise<Matched
       match_score: gr.match_score,
       salary_min: min,
       salary_max: max,
-      employment_count: market?.employment_count ?? 0,
+      employment_count: market?.employment_count ?? estimateEmployment(gr.role_name),
+      why_it_matches: gr.why_it_matches,
+      interview_potential: gr.interview_potential,
     }
   })
 
-  const top20 = scored.sort((a, b) => b.match_score - a.match_score).slice(0, 20)
-  return top20.map((role) => ({ ...role, related_roles: getRelatedRoles(role, top20) }))
+  const top30 = scored.sort((a, b) => b.match_score - a.match_score).slice(0, 30)
+  return top30.map((role) => ({ ...role, related_roles: getRelatedRoles(role, top30) }))
 }
 
 // Fallbacks when no DB market data exists for a role
@@ -87,4 +93,13 @@ function estimateGrowth(demandLevel: string): number {
     case 'Medium': return 6
     default: return 2
   }
+}
+
+function estimateEmployment(roleName: string): number {
+  const name = roleName.toLowerCase()
+  if (name.includes('developer') || name.includes('engineer') || name.includes('programmer')) return 1895500
+  if (name.includes('analyst') || name.includes('specialist')) return 112100
+  if (name.includes('manager') || name.includes('director') || name.includes('lead')) return 667100
+  if (name.includes('administrator') || name.includes('architect')) return 144900
+  return 150000 // reasonable standard default for US occupations
 }

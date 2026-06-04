@@ -1,4 +1,4 @@
-﻿import { serviceSupabase } from '@/lib/supabase/service'
+import { serviceSupabase } from '@/lib/supabase/service'
 import { notFound } from 'next/navigation'
 import DashboardClient from './DashboardClient'
 import type { RoleData } from '@/components/dashboard/RoleTile'
@@ -23,7 +23,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ repo
     return {
       rank:       r.rank,
       title:      r.role_title,
-      score:      r.match_score,
+      score:      meta.original_score ?? r.match_score,
       jobs:       meta.employment_count > 0
                     ? (meta.employment_count as number).toLocaleString()
                     : 'N/A',
@@ -48,6 +48,8 @@ export default async function DashboardPage({ params }: { params: Promise<{ repo
       atsScore={parsed.ats_score ?? 0}
       employabilityScore={parsed.employability_score ?? 0}
       topScore={topScore}
+      education={parsed.education ?? ''}
+      candidateName={parsed.candidate_name ?? ''}
     />
   )
 }
