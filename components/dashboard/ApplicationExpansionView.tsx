@@ -129,7 +129,7 @@ export function ApplicationExpansionView({ roles }: Props) {
             <h2 className="text-sm font-bold text-white mb-1">Job Inventory Check</h2>
             <p className="text-xs text-gray-500 mb-4">Verification that reachable inventory ({totalJobs.toLocaleString()} jobs) supports 25 apps/day.</p>
             
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {[
                 { days: 30, req: 750 },
                 { days: 60, req: 1500 },
@@ -138,15 +138,17 @@ export function ApplicationExpansionView({ roles }: Props) {
               ].map(item => {
                 const isSupported = totalJobs >= item.req
                 return (
-                  <div key={item.days} className="flex items-center justify-between p-2.5 rounded-lg bg-white/5 border border-white/5">
+                  <div key={item.days} className="flex items-center justify-between p-3.5 rounded-xl bg-[#181a26]/50 border border-white/5 shadow-md">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold text-white">{item.days} Days Strategy</span>
                       <span className="text-[10px] text-gray-500">({item.req} jobs req.)</span>
                     </div>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold ${
-                      isSupported ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                    <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold border ${
+                      isSupported 
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                        : 'bg-red-500/10 text-red-400 border-red-500/20'
                     }`}>
-                      {isSupported ? 'Fully Supported ✓' : 'Unsupported ✕'}
+                      {isSupported ? 'Fully Supported ✔' : 'Unsupported ✕'}
                     </span>
                   </div>
                 )
@@ -154,9 +156,12 @@ export function ApplicationExpansionView({ roles }: Props) {
             </div>
           </div>
           
-          <p className="text-[11px] text-gray-500 mt-4 leading-normal bg-blue-950/20 border border-blue-500/10 p-2.5 rounded-lg">
-            <strong>Recruiter Tip</strong>: Spreading daily submissions across 3-5 roles prevents pipeline saturation and ensures a continuous flow of screening requests.
-          </p>
+          <div className="bg-blue-950/20 border border-blue-500/10 p-3.5 rounded-xl flex items-start gap-2.5 mt-4">
+            <span className="text-sm shrink-0">💡</span>
+            <p className="text-[11px] text-gray-400 leading-normal">
+              <strong className="text-white">Recruiter Tip:</strong> Spreading daily submissions across 3-5 roles prevents pipeline saturation and ensures a continuous flow of screening requests.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -221,13 +226,13 @@ export function ApplicationExpansionView({ roles }: Props) {
       <div className="grid grid-cols-3 gap-5">
         {/* Primary target */}
         <div className="bg-[#13151f]/80 border border-white/10 rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-base">🟢</span>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
             <h3 className="text-xs text-gray-400 font-bold uppercase tracking-wide">Primary Target Roles</h3>
           </div>
-          <ul className="space-y-2">
+          <ul className="space-y-2.5">
             {sortedRoles.filter(r => r.score >= 8.0).slice(0, 10).map((r, i) => (
-              <li key={r.title} className="flex justify-between items-center text-xs border-b border-white/5 pb-1.5">
+              <li key={r.title} className="flex justify-between items-center text-xs">
                 <span className="text-white/80 font-medium">{i + 1}. {r.title}</span>
                 <span className="text-emerald-400 font-bold">{r.score.toFixed(1)}</span>
               </li>
@@ -237,15 +242,15 @@ export function ApplicationExpansionView({ roles }: Props) {
 
         {/* Adjacent */}
         <div className="bg-[#13151f]/80 border border-white/10 rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-base">🟨</span>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
             <h3 className="text-xs text-gray-400 font-bold uppercase tracking-wide">Adjacent Roles</h3>
           </div>
-          <ul className="space-y-2">
+          <ul className="space-y-2.5">
             {sortedRoles.filter(r => r.score >= 7.0 && r.score < 8.0).slice(0, 10).map((r, i) => (
-              <li key={r.title} className="flex justify-between items-center text-xs border-b border-white/5 pb-1.5">
+              <li key={r.title} className="flex justify-between items-center text-xs">
                 <span className="text-white/80 font-medium">{i + 1}. {r.title}</span>
-                <span className="text-yellow-400 font-bold">{r.score.toFixed(1)}</span>
+                <span className="text-amber-500 font-bold">{r.score.toFixed(1)}</span>
               </li>
             ))}
           </ul>
@@ -253,13 +258,13 @@ export function ApplicationExpansionView({ roles }: Props) {
 
         {/* Stretch */}
         <div className="bg-[#13151f]/80 border border-white/10 rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-base">🟧</span>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
             <h3 className="text-xs text-gray-400 font-bold uppercase tracking-wide">Stretch Roles (Top 5)</h3>
           </div>
-          <ul className="space-y-2">
+          <ul className="space-y-2.5">
             {sortedRoles.filter(r => r.score < 7.0).slice(0, 5).map((r, i) => (
-              <li key={r.title} className="flex justify-between items-center text-xs border-b border-white/5 pb-1.5">
+              <li key={r.title} className="flex justify-between items-center text-xs">
                 <span className="text-white/80 font-medium">{i + 1}. {r.title}</span>
                 <span className="text-orange-400 font-bold">{r.score.toFixed(1)}</span>
               </li>
